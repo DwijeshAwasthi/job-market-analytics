@@ -4,7 +4,7 @@ import warnings
 import glob
 import json
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, lower, trim, when
+from pyspark.sql.functions import col, lower, trim, when, explode
 
 os.environ['PYSPARK_PYTHON'] = sys.executable
 os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
@@ -56,13 +56,15 @@ def main():
         .withColumn("company_name", trim(lower(col("company_name")))) \
         .withColumn("location", trim(lower(col("location")))) \
         .withColumn("remote", when(col("remote")==True, "Remote").otherwise("On-Site"))
+    
+    exploded_df=cleaned_df.withColumn("job_tag", explode(col("tags")))
 
     
     cleaned_count = cleaned_df.count()
     print(f" Cleaned unique row count: {cleaned_count}")
 
     print("\nVerification Preview (Cleaned Schema & Sample Text):")
-    cleaned_df.select("company_name", "title", "location", "remote").show(5, truncate=False)
+    exploded_df.select("company_name", "title", "job_tag").show(10, truncate=False)
 
     print(" Stopping Spark session...")
     spark.stop()
